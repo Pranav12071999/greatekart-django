@@ -20,12 +20,9 @@ def register(request):
             last_name = form.cleaned_data['last_name']
             email = form.cleaned_data['email']
             phone_number = form.cleaned_data['phone_number']
-            password = request.POST['password']
-            confirm_password = request.POST['confirm_password']
-            print(f'password = {password}')
-            print(f'confirm_password = {confirm_password}')
             username = email.split('@')[0]
-            user = Account.objects.create_user(first_name=first_name, last_name=last_name, email = email, username = username)
+            password = form.cleaned_data['password']
+            user = Account.objects.create_user(first_name=first_name, last_name=last_name, email = email, username = username, password=password)
             user.phone_number = phone_number
             user.save()
             # User activation
@@ -47,11 +44,11 @@ def register(request):
     context = {'form':form}
     return render(request, 'accounts/register.html', context)
     
-def login(request):
+def login(request): 
     if request.method == 'POST':
         email = request.POST['email']
         password = request.POST['password']
-        print(f'Login password = {password}')
+
         user = auth.authenticate(email = email, password = password)
         print(f'User = {user}')
 
