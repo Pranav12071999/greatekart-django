@@ -11,6 +11,9 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
+from carts.models import *
+from carts.views import _cart_id
+import requests
 # Create your views here.
 def register(request):
     if request.method == 'POST':
@@ -53,7 +56,49 @@ def login(request):
         print(f'User = {user}')
 
         if user is not None:
+            try:
+                cart = Cart.objects.get(cart_id = _cart_id(request))
+                is_cart_item_exist = CartItem.objects.filter(cart = cart).exists()
+                if is_cart_item_exist:
+                    cart_items = CartItem.objects.filter(cart = cart)
+                    product_variation =  []
+                    for item in cart_items:
+                        variations = item.variations.all()
+                        product_variation.append(list(variations))
+                    existing_variations = []
+                    id = []
+                    cart_items = CartItem.objects.filter(user = user)
+                    for item in cart_items:
+                        variations = item.variations.all()
+                        existing_variations.append(list(variations))
+                        id.append(item.id)
+                    for pr in product_variation:
+                        if pr in existing_variations:
+                            index = existing_variations.index(pr)
+                            item_index = id[index]
+                            cart_item = CartItem.objects.get(id = item_index)
+                            cart_item.quantity += 1
+                            cart_item.user = user
+                            cart_item.save()
+                        else:
+                            cart_items = CartItem.objects.filter(cart = cart)
+                            for item in cart_items:
+                                item.user = user
+                                item.save()
+            except:
+                pass
             auth.login(request, user)
+            url = request.META.get('HTTP_REFERER') # This is used to get the main url http://127.0.0.1:8000/accounts/login/?next=/carts/checkout
+            try:
+                query = requests.utils.urlparse(url).query # This will give  next=/carts/checkout
+                lst = query.split('=')
+                if 'next' in lst:
+                    next_index = lst.index('next')
+                    next_page = lst[next_index + 1]
+                    return redirect(next_page)
+            except:
+                pass
+
             return redirect('dashboard')
         else:
             messages.error(request, 'Invalid Credentials !!')
