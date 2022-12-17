@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'accounts',
     'store',
     'carts',
+    'orders',
+    'crispy_forms',
 ]
 
 MIDDLEWARE = [
@@ -147,3 +149,5 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = 'pranavjadhav1207@gmail.com'
 EMAIL_HOST_PASSWORD = 'xwqcchufpgoydssr' # This is the app password created for this gmail account refer this link. https://support.google.com/accounts/answer/185833
 EMAIL_USE_TLS = True
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'

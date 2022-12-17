@@ -4,6 +4,7 @@ from .models import *
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
+from orders.forms import *
 # Create your views here.
 # This function is used to fetch or create the session key 
 def _cart_id(request):
@@ -176,6 +177,7 @@ def CartHomePageView(request, total = 0, quantity = 0, cart_items = None):
 
 @login_required(login_url='login')
 def checkout(request, total = 0, quantity = 0, cart_items = None):
+    form = OrderForm()
     try:
         if request.user.is_authenticated:
             cart_items = CartItem.objects.filter(user = request.user, is_active = True)
@@ -196,6 +198,7 @@ def checkout(request, total = 0, quantity = 0, cart_items = None):
         'quantity':quantity,
         'cart_items':cart_items,
         'tax':tax,  
-        'grand_total':grand_total
+        'grand_total':grand_total,
+        'form':form,
     }
     return render(request, 'store/checkout.html', context)
