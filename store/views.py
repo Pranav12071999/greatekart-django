@@ -7,6 +7,9 @@ from carts.models import *
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from store.models import *
+from .forms import *
+from django.contrib import messages
+from orders.models import *
 # Create your views here.
 def StoreHomePageView(request, category_slug = None):
     if category_slug != None:
@@ -35,15 +38,31 @@ def DetailProductView(request, category_slug, product_slug):
             out_of_stock = True
         else:
             out_of_stock = False
-        
+     
 
     except Exception as e:
         raise e
+    
+    if request.user.is_authenticated:
+        try:
+            orderproduct = OrderProductModel.objects.filter(user = request.user, product__product_slug = product_slug).exists()
+        except OrderProductModel.DoesNotExist:
+            orderproduct = None
+    else:
+        orderproduct = None
+
+    # Printing reviews for this product
+    try:
+        reviews = ReviewModel.objects.filter(product__product_slug = product_slug, status = True) # This status is true filter is for let us say admin wants to not show any comment then he will make status = False from backend.
+    except ReviewModel.DoesNotExist:
+        reviews = None
     context = {'single_product':single_product, 
     'out_of_stock':out_of_stock, 
     'in_cart':in_cart,
     'color_variations':color_variations,
-    'size_variations':size_variations
+    'size_variations':size_variations,
+    'orderproduct':orderproduct,
+    'reviews':reviews,
     } 
     
     return render(request, 'store/detail_product.html', context)
@@ -57,3 +76,28 @@ def search(request):
             product_count = products.count()
     context = {'products':products, 'product_count':product_count}
     return render(request, 'store/storehomepage.html', context)
+
+def submit_review(request, product_id):
+    url = request.META.get('HTTP_REFERER') # This will give us current url
+    try:
+        # This try block is for if that user gives review for this product previously then it will update the review.
+        review = ReviewModel.objects.get(user__id = request.user.id, product__id = product_id)
+        form = ReviewForm(request.POST, instance=review)
+        form.save()
+        messages.success(request, 'Your Review is updated successfully !!')
+        return redirect(url)
+    except ReviewModel.DoesNotExist:
+        # If review is not there before then create new review
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            data = ReviewModel()
+            data.subject = form.cleaned_data['subject']
+            data.review = form.cleaned_data['review']
+            data.rating = form.cleaned_data['rating']
+            data.ip = request.META.get('REMOTE_ADDR') # This will sae an ip address of your computer
+            data.product_id = product_id
+            data.user_id = request.user.id
+            data.save()
+            messages.success(request, 'Your review added successfully')
+            return redirect(url)
+    

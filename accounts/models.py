@@ -57,6 +57,8 @@ class Account(AbstractBaseUser):
     # Using MyAccountManager to create account
     objects = MyAccountManger()
 
+    def full_name(self):
+        return f'{self.first_name} {self.last_name}'
     def __str__(self):
         return self.email
     # This is the method used to check the whether it has admin permissions or not.
